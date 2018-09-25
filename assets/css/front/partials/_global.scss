@@ -1,0 +1,194 @@
+/*------------------------------------------------------------------
+[Global styles]
+-------------------------------------------------------------------*/
+.align-center {
+	text-align: center;
+}
+
+.alignleft {
+	float: left;
+	margin: 0 10px 10px 0;
+}
+
+.alignright {
+	float: left;
+	margin: 0 0 10px 10px;
+}
+
+.aligncenter {
+	display: block;
+	margin: 0 auto 10px auto;
+}
+
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+	color: inherit;
+}
+
+table {
+	width: 100%;
+}
+
+img {
+	max-width: 100%;
+	height: auto;
+}
+
+select {
+	max-width: 100%;
+}
+
+/** By Envato requirements */
+.wp-caption,
+.wp-caption-text,
+.screen-reader-text,
+.gallery-caption,
+.bypostauthor {
+  border:0;
+}
+
+.btn {
+  border-radius:2px;
+}
+
+html, body {
+  font-size:14px;
+}
+a {
+  color: #17a2b8;
+}
+.hide {
+  display:none;
+}
+.show {
+  display:block;
+}
+
+#content {
+  .menu {
+    border: 1px green solid;
+    padding:0;
+
+    .btn {
+      display:block;
+      text-align: left;
+      margin-bottom:5px;
+      padding:8px 20px;
+
+    }
+  }
+}
+
+.result {
+  border:1px red solid;
+}
+
+table * {
+  font-size: 14px;
+}
+table th {
+  font-weight:normal;
+
+  a {
+
+  }
+}
+.prepend {
+  display: inline-block;
+  background-color:rgba(0,0,0,.15);
+  padding:6px 5px;
+  font-size:12px;
+  border-top-left-radius:3px;
+  border-bottom-left-radius:3px;
+  font-weight:bold;
+  color:#555;
+}
+
+.filters {
+  margin-top: 10px;
+
+  .form-group {
+    margin-bottom:4px;
+
+    label, input, select {
+      display: inline-block;
+      border-radius:2px;
+    }
+    label {
+      margin-right: 10px;
+      width:70px;
+    }
+    input {
+      width: 100px;
+
+    }
+    select {
+      width: auto;
+
+    }
+  }
+}
+.btn-filter {
+  margin-top:10px;
+  padding-left:30px;
+  padding-right:30px;
+  cursor:pointer;
+}
+.btn-clear {
+  margin-top:10px;
+  margin-left:10px;
+  padding-left:20px;
+  padding-right:20px;
+  cursor:pointer;
+}
+
+.tabs {
+  .tab {
+    display:inline-block;
+    margin-right:3px;
+    padding:6px 12px;
+    background-color:#f2f2f2;
+    border-top-left-radius:3px;
+    border-top-right-radius:3px;
+    cursor:pointer;
+
+    &.active {
+      background-color:#fdd294;
+      cursor:default;
+      /*color:#fff;*/
+    }
+  }
+}
+
+.paging {
+  margin-bottom:20px;
+  .total {
+    padding-top:7px;
+    font-size:13px;
+  }
+  .pages {
+    span, a {
+      border: 1px rgba(0,0,0,.15) solid;
+      color:#555;
+      height: 30px;
+      width: 30px;
+      padding-top:4px;
+      display:inline-block;
+      text-align:center;
+      margin-right:3px;
+      font-size:13px;
+      border-radius:2px;
+    }
+    span {
+      background-color:rgba(0,0,0,.15);
+      color:#555;
+    }
+    select {
+      height:25px;
+      border-radius:2px;
+      margin-top:2px;
+      display:inline-block;
+      margin-left:15px;
+    }
+
+  }
+}
