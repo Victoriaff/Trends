@@ -5,39 +5,37 @@ Template Name: Trends
 
 set_time_limit(0);
 
-define( 'TRENDS_DIR', ABSPATH . 'data' );
+define( 'ABSPATH', 'D:\Sites\trends.lc' );
+define( 'TRENDS_DIR', ABSPATH . '/data' );
 
 define( 'TRENDS_DATE', '29-09-2018' );
 define( 'CUR_DATE', '2018-09-29' );
 
-$items = $wpdb->get_results("SELECT * FROM wp_trend_products WHERE created_date = '0000-00-00' or created_date is NULL");
-
-foreach($items as $item) {
-    $sql = $wpdb->prepare("SELECT * FROM wp_trend_product_sales WHERE envato_id = %d ORDER BY record_date DESC LIMIT 1", array($item->envato_id) );
-    dump($sql);
-    $date = $wpdb->get_row( $sql );
+function dump( $arg='', $dd=false) {
+    print_r($arg);
     
-    if (isset($date['sales'])) {
-        $sql = $wpdb->prepare("UPDATE wp_trend_products SET created_date = %s", array($date->record_date) );
-        dump($sql);
-        //$wpdb->query( $sql );
-        dd(0);
-        
-        
-    }
+    echo "\r\n";
+    $track = debug_backtrace();
+    $index = $dd ? 1:0;
+    echo $track[ $index ]['file'].', line '.$track[ $index ]['line'];
+    echo "\r\n---------------------------------------------------------\r\n";
 }
-exit;
 
+function dd( $arg='' ) {
+    dump($arg, true);
+    exit;
+}
 
-
+$db = new PDO("mysql:dbname=trends;host=localhost", 'root', '');
 
 $sites = array(
-/*
+
 	'codecanyon.net' => array(
 		'url' => 'https://codecanyon.net/category/wordpress/{category}?page=1&sort=sales',
 		'type'      => 'plugin',
         'categories' => array(
             'utilities',
+            /*
             'miscellaneous',
             'ecommerce',
             'add-ons',
@@ -54,30 +52,32 @@ $sites = array(
             'newsletters',
             'membership',
             'forums',
+            */
         )   
 	),
-    */
     
+    /*
 	'themeforest.net' => array(
 		'url' => 'https://themeforest.net/search?page=1&sort=sales',
 		'type' => 'theme',
         'categories' => array(
-            //'ecommerce',
-            //'corporate',
-            //'creative',
-            //'blog-magazine',
-            //'retail',
-            //'entertainment',
-            //'nonprofit',
-            //'technology',
-            //'education',
-            //'real-estate',
-            //'miscellaneous',
-            //'wedding',
-            //'mobile',
-            //'buddypress'
+            'ecommerce',
+            'corporate',
+            'creative',
+            'blog-magazine',
+            'retail',
+            'entertainment',
+            'nonprofit',
+            'technology',
+            'education',
+            'real-estate',
+            'miscellaneous',
+            'wedding',
+            'mobile',
+            'buddypress'
         )   
 	)
+    */
     
     
 );
@@ -110,6 +110,8 @@ foreach ( $sites as $site => $site_data ) {
             $fname   = $dir . '/' . $page . '.html';
             $url = preg_replace('#\{category\}#', $category, $site_data['url']);
             $url = preg_replace('#\?page=[0-9]+#', '?page='.$page, $url);
+            
+            //dd($fname);
             
             $content = trends_get_pagination_page( $fname, $url );
             $content = preg_replace('#<!-- -->#', '' ,$content);
@@ -205,62 +207,53 @@ foreach ( $sites as $site => $site_data ) {
                     if ($data['id'] && $data['price'] && isset($data['sales'])) {
                         
                         // Insert product or update
-                        $sql = $wpdb->prepare("
+                        $stmt = $db->prepare("
                                 INSERT INTO wp_trend_products(`envato_id`,`type`,`name`,`category`,`sales`,`url`,`author`,`price`,`rating`,`created_date`,`compatible_with`,`files_included`,`tags`,`added_date`,`update_date`)
-                                VALUES ( %d, %s, %s, %s, %d, %s, %s, %f, %f, %s, %s, %s, %s, '".CUR_DATE."', '".CUR_DATE."' ) 
+                                VALUES ( :envato_id, :type, :name, :category, :sales, :url, :author, :price, :rating, :created_date, :compatible_with, :files_included, :tags, '".CUR_DATE."', '".CUR_DATE."' ) 
                                 ON DUPLICATE KEY UPDATE 
-                                    category = %s,
-                                    sales = %d,
-                                    price = %f,
-                                    rating = %f,
-                                    tags = %s,
-                                    update_date = '".CUR_DATE."'
-                                ",
-                                array(
-                                    $data['id'],
-                                    $data['type'],
-                                    $data['name'],
-                                    $category,
-                                    $data['sales'],
-                                    $data['url'],
-                                    $data['author'],
-                                    $data['price'],
-                                    $data['rating'],
-                                    $data['created_date'],
-                                    $data['compatible_with'],
-                                    $data['files_included'],
-                                    $data['tags'],
-                                    
-                                    $category,
-                                    $data['sales'],
-                                    $data['price'],
-                                    $data['rating'],
-                                    $data['tags']
-                                )
+                                    category = :category,
+                                    sales = :sales,
+                                    price = :price,
+                                    rating = :rating,
+                                    tags = :tags,
+                                    update_date = '".CUR_DATE."')"
                         );
+                        $stmt->execute(array(
+                            ':envato_id' => $data['id'],
+                            ':type' => $data['type'],
+                            ':name' => $data['name'],
+                            ':category' => $category,
+                            ':sales' => $data['sales'],
+                            ':url' => $data['url'],
+                            ':author' => $data['author'],
+                            ':price' => $data['price'],
+                            ':rating' => $data['rating'],
+                            ':created_date' => $data['created_date'],
+                            ':compatible_with' => $data['compatible_with'],
+                            ':files_included' => $data['files_included'],
+                            ':tags' => $data['tags'],
+                        ));
+                        dd($stmt);
                         //dump( $sql );
-                        $q = $wpdb->query( $sql );
-                        //dd($q);
+                        
                         
                         // Get record
-                        $sql    = $wpdb->prepare("SELECT ID FROM wp_trend_products WHERE envato_id = %d", array( $data['id'] ));
-                        $result =  $q = $wpdb->get_row( $sql );
-                        //dump($result);
+                        $stmt = $db->prepare("SELECT ID FROM wp_trend_products WHERE envato_id = ".$data['id']);
+                        $stmt->execute();
+                        $result = $stmt->fetchAll();
+                        dd($result);
+                        
                         
                         if ( $result && ! empty( $result->ID ) ) {
                             // Insert sale
-                            $sql    = $wpdb->prepare("
-                                INSERT INTO wp_trend_product_sales(`product_id`, `envato_id`,`sales`,`record_date`)
-                                VALUES ( %d, %d, %d, %s )",
-                                array(
-                                    $result->ID,
-                                    $data['id'],
-                                    $data['sales'],
-                                    CUR_DATE
-                                )
-                            );
-                            //dump($sql);
-                            $result = $wpdb->get_results( $sql );
+                            $stmt = $db->prepare("INSERT INTO wp_trend_product_sales(`product_id`, `envato_id`,`sales`,`record_date`) VALUES ( :product_id, :envato_id, :sales, :record_date )");
+                            $stmt->execute(array(
+                                ':product_id' => $result->ID,
+                                ':envato_id' => $data['id'], 
+                                ':sales' => $data['sales'], 
+                                ':record_date' => CUR_DATE
+                            ));
+                            
                         }
                         
                          //usleep(50);
@@ -327,35 +320,7 @@ function trends_get_pagination_page( $fname, $url ) {
 	return $content;
 }
 
-function trends_get_product_page( $fname, $url ) {
-    
-    $old_fname           = preg_replace('#pages/[0-9]+#', 'pages', $fname);
-    if ( file_exists( $old_fname ) ) @copy($old_fname, $fname);
-    
-    $content = '';
-	if ( file_exists( $fname ) ) {
-		$content = file_get_contents( $fname );
-	} else {
-		//$c = file_get_contents( $url );
-        
-        usleep(300);
-        
-        //$url = 'http://codecanyon.net/item/visual-composer-page-builder-for-wordpress/242431?s_rank=1';
-        //$f = fopen($url, 'r');
-        //dd($f);
-        //$c = fread($f, 100000);
-        $c = wp_remote_post( $url );
-        //$c = file_get_contents( $url );
-        //dd($c);
-        if ( isset( $c['body'] ) && preg_match('#<h1 class="t\-heading \-color\-inherit#', $c['body']) ) {
-			$content = $c['body'];
-			file_put_contents( $fname, $content );
-		}
-	}
-	
-    //dd($content);
-	return $content;
-}
+
 
 function _getDate( $string ) {
 	$mon = array(
@@ -385,6 +350,9 @@ function expl( $exp1, $exp2, $text ) {
 	}
 	return $c[0];
 }
+
+
+
 
 
 

@@ -7,32 +7,16 @@ set_time_limit(0);
 
 define( 'TRENDS_DIR', ABSPATH . 'data' );
 
+//define( 'TRENDS_DATE', date( 'd-m-Y' ) );
+//define( 'CUR_DATE', 'curdate()' );
+define( 'NOW', 'now()' );
+
 define( 'TRENDS_DATE', '29-09-2018' );
 define( 'CUR_DATE', '2018-09-29' );
 
-$items = $wpdb->get_results("SELECT * FROM wp_trend_products WHERE created_date = '0000-00-00' or created_date is NULL");
-
-foreach($items as $item) {
-    $sql = $wpdb->prepare("SELECT * FROM wp_trend_product_sales WHERE envato_id = %d ORDER BY record_date DESC LIMIT 1", array($item->envato_id) );
-    dump($sql);
-    $date = $wpdb->get_row( $sql );
-    
-    if (isset($date['sales'])) {
-        $sql = $wpdb->prepare("UPDATE wp_trend_products SET created_date = %s", array($date->record_date) );
-        dump($sql);
-        //$wpdb->query( $sql );
-        dd(0);
-        
-        
-    }
-}
-exit;
-
-
-
 
 $sites = array(
-/*
+
 	'codecanyon.net' => array(
 		'url' => 'https://codecanyon.net/category/wordpress/{category}?page=1&sort=sales',
 		'type'      => 'plugin',
@@ -56,26 +40,25 @@ $sites = array(
             'forums',
         )   
 	),
-    */
     
 	'themeforest.net' => array(
 		'url' => 'https://themeforest.net/search?page=1&sort=sales',
 		'type' => 'theme',
         'categories' => array(
-            //'ecommerce',
-            //'corporate',
-            //'creative',
-            //'blog-magazine',
-            //'retail',
-            //'entertainment',
-            //'nonprofit',
-            //'technology',
-            //'education',
-            //'real-estate',
-            //'miscellaneous',
-            //'wedding',
-            //'mobile',
-            //'buddypress'
+            'ecommerce',
+            'corporate',
+            'creative',
+            'blog-magazine',
+            'retail',
+            'entertainment',
+            'nonprofit',
+            'technology',
+            'education',
+            'real-estate',
+            'miscellaneous',
+            'wedding',
+            'mobile',
+            'buddypress'
         )   
 	)
     
@@ -100,9 +83,9 @@ foreach ( $sites as $site => $site_data ) {
         
         $content = '';
         $pages   = 1;
-        //$pages = 35;
         
         for ( $page = 1; $page <= $pages; $page ++ ) {
+            
             
             dump('Category: '.$category.'; Page = '.$page);
 
@@ -112,7 +95,6 @@ foreach ( $sites as $site => $site_data ) {
             $url = preg_replace('#\?page=[0-9]+#', '?page='.$page, $url);
             
             $content = trends_get_pagination_page( $fname, $url );
-            $content = preg_replace('#<!-- -->#', '' ,$content);
             //dd($content);
             
             if ($content) {
@@ -120,7 +102,6 @@ foreach ( $sites as $site => $site_data ) {
                 if ( $pages == 1 ) {
                     preg_match_all( '#\?page=([0-9]+)&#', $content, $matches );
                     $pages = end( $matches[1] );
-                    dump($pages);
                 }
                 //continue;
                 
@@ -132,27 +113,20 @@ foreach ( $sites as $site => $site_data ) {
                 for ( $i = 1; $i < count( $e ); $i ++ ) {
                     
                     $data = array(
-                        'id'                => 0,
-                        'type'              => $site_data['type'],
-                        'url'               => '',
-                        'name'              => '',
-                        'author'            => '',
-                        'price'             => 0,
-                        'rating'            => 0,
-                        'compatible_with'   => '',
-                        'files_included'    => '',
-                        'created_date'      => '',
-                        'tags'              => ''
+                        'type'            => $site_data['type'],
+                        'rating'          => 0,
+                        'compatible_with' => '',
+                        'files_included'  => ''
                     );
                     
-                    // URL
+                    // Get url
                     unset( $p );
                     preg_match( '#<h3><a href="([^"]+)#', $e[ $i ], $p );
                     $data['url'] = $p[1];
                     
-                    //dump('Category: '.$category.'; URL = '.$data['url']);
+                    dump('Category: '.$category.'; URL = '.$data['url']);
                     
-                    // Envato ID
+                    // Get Envato ID
                     unset( $p );
                     preg_match( '#/([0-9]+)\?#', $data['url'], $p );
                     $data['id'] = $p[1];
@@ -162,59 +136,74 @@ foreach ( $sites as $site => $site_data ) {
                     //dd($data);
                     //if ($data['id'] == 242431) continue;
                     
-                    // Name
+                    // Get name
                     unset( $p );
                     preg_match( '#>([^<]+)</a></h3>#', $e[ $i ], $p );
                     $data['name'] = $p[1];
                     
-                     // Author
-                    unset( $p );
-                    preg_match( '#<i> by </i><a( class="[^"]+")? href="([^"]+)">([^<]+)#', $e[ $i ], $p );
-                    if (isset($p[3]))  $data['author'] = $p[3];
+                    // Read product page
+                    $fname           = TRENDS_DIR . '/' . $site . '/' . TRENDS_DATE . '/pages/' . floor($data['id']/1000) . '/'. $data['id'] . '.html';
+                    @mkdir( TRENDS_DIR . '/' . $site . '/' . TRENDS_DATE . '/pages/' . floor($data['id']/1000) );
                     
+                    dump($fname);
+                    dump($data['url']);
+                    $product_content = trends_get_product_page( $fname, $data['url'] );
+                    dd($product_content);
                     
-                    $sections = explode('<section ', $e[ $i ]);
-                    
-                    if (isset($sections[3])) {
-                        // Price
-                        unset( $p );
-                        preg_match( '#>\$([0-9\.]*)#', $e[ $i ], $p );
-                        if (isset($p[1]))  $data['price'] = $p[1];
+                    if ($product_content) {
+                        $data['sales']   = preg_replace( '#,#', '', trim( expl( '<i class="e-icon -icon-cart"></i></span>', '</strong>', $product_content ) ) );
                         
-                        // Sales
+                        // Get author and author URL
                         unset( $p );
-                        preg_match( '#>([0-9\.K]+) Sales#', $e[ $i ], $p );
-                        if (isset($p[1])) {
-                            $data['sales'] = $p[1];
-                            if (preg_match('#K#', $data['sales'])) $data['sales'] = (float)preg_replace('#K#', '', $data['sales'])*1000;
+                        preg_match( '#<a rel="author" class="t-link -color-dark -decoration-none" href="([^"]+)">([^<]+)</a>#', $product_content, $p );
+                        $data['author_url'] = $p[1];
+                        $data['author']     = $p[2];
+                        
+                        // Get price
+                        unset( $p );
+                        preg_match( '#class="js\-purchase\-price">\$([0-9]+)#', $product_content, $p );
+                        $data['price'] = $p[1];
+                        
+                        // Get rating
+                        unset( $p );
+                        preg_match( '#([0-9\.]+) average based on#', $product_content, $p );
+                        if (isset($p[1])) $data['rating'] = $p[1];
+                        
+                        // Compatible With
+                        if ( preg_match( '#>Compatible With</td>#', $product_content ) ) {
+                            $c = expl( '>Compatible With</td>', '</tr>', $product_content );
+                            preg_match_all( '#>([^<]+)</a>#', $c, $p );
+                            $data['compatible_with'] = implode( ',', $p[1] );
                         }
-                    }
-                    
-                    // Rating
-                    unset( $p );
-                    preg_match( '#Rated ([0-9\.]+) out of 5#', $e[ $i ], $p );
-                    if (isset($p[1])) $data['rating'] = $p[1];
-                    
-                    // Tags
-                    unset( $p );
-                    preg_match( '#>Tags:([^<]+)#', $e[ $i ], $p );
-                    if (isset($p[1])) $data['tags'] = trim($p[1]);
-                    
-                    //dump($data);
-                    
-                    if ($data['id'] && $data['price'] && isset($data['sales'])) {
+                        
+                        // Files Included
+                        if ( preg_match( '#Files Included</td>#', $product_content ) ) {
+                            $c = expl( 'Files Included</td>', '</tr>', $product_content );
+                            preg_match_all( '#>([^<]+)</a>#', $c, $p );
+                            $data['files_included'] = implode( ',', $p[1] );
+                        }
+                        
+                        // Created
+                        $c = expl( '<td class="meta-attributes__attr-name">Created</td>', '</tr>', $product_content );
+                        preg_match( '#<span>([^<]+)</span>#', $c, $p );
+                        $data['product_created'] = trim( $p[1] );
+                        
+                        $data['created_date'] = _getDate($data['product_created']);
+                        
+                        dump($data);
                         
                         // Insert product or update
                         $sql = $wpdb->prepare("
-                                INSERT INTO wp_trend_products(`envato_id`,`type`,`name`,`category`,`sales`,`url`,`author`,`price`,`rating`,`created_date`,`compatible_with`,`files_included`,`tags`,`added_date`,`update_date`)
-                                VALUES ( %d, %s, %s, %s, %d, %s, %s, %f, %f, %s, %s, %s, %s, '".CUR_DATE."', '".CUR_DATE."' ) 
+                                INSERT INTO wp_trend_products(`envato_id`,`type`,`name`,`category`,`sales`,`url`,`author`,`author_url`,`price`,`rating`,`product_created`,`created_date`,`compatible_with`,`files_included`,`added_date`,`update_date`)
+                                VALUES ( %d, %s, %s, %s, %d, %s, %s, %s, %f, %f, %s, %s, %s, %s, %s, %s ) 
                                 ON DUPLICATE KEY UPDATE 
                                     category = %s,
                                     sales = %d,
                                     price = %f,
                                     rating = %f,
-                                    tags = %s,
-                                    update_date = '".CUR_DATE."'
+                                    compatible_with = %s,
+                                    files_included = %s,
+                                    update_date = %s
                                 ",
                                 array(
                                     $data['id'],
@@ -224,53 +213,56 @@ foreach ( $sites as $site => $site_data ) {
                                     $data['sales'],
                                     $data['url'],
                                     $data['author'],
+                                    $data['author_url'],
                                     $data['price'],
                                     $data['rating'],
+                                    $data['product_created'],
                                     $data['created_date'],
                                     $data['compatible_with'],
                                     $data['files_included'],
-                                    $data['tags'],
+                                    NOW,
+                                    NOW,
                                     
                                     $category,
                                     $data['sales'],
                                     $data['price'],
                                     $data['rating'],
-                                    $data['tags']
+                                    $data['compatible_with'],
+                                    $data['files_included'],
+                                    NOW
                                 )
                         );
-                        //dump( $sql );
+                        dd( $sql );
                         $q = $wpdb->query( $sql );
-                        //dd($q);
+                        
                         
                         // Get record
                         $sql    = $wpdb->prepare("SELECT ID FROM wp_trend_products WHERE envato_id = %d", array( $data['id'] ));
-                        $result =  $q = $wpdb->get_row( $sql );
+                        $result =  $q = $wpdb->get_results( $sql );
                         //dump($result);
                         
-                        if ( $result && ! empty( $result->ID ) ) {
+                        if ( $result && ! empty( $result->id ) ) {
                             // Insert sale
                             $sql    = $wpdb->prepare("
                                 INSERT INTO wp_trend_product_sales(`product_id`, `envato_id`,`sales`,`record_date`)
                                 VALUES ( %d, %d, %d, %s )",
                                 array(
-                                    $result->ID,
+                                    $result->id,
                                     $data['id'],
                                     $data['sales'],
                                     CUR_DATE
                                 )
                             );
-                            //dump($sql);
+                                //dump($sql);
                             $result = $wpdb->get_results( $sql );
                         }
                         
-                         //usleep(50);
-                        
-                        //dd( $data );
-                        //exit;
-                    } else
-                        dd($data);
+                        dd( $data );
+                        exit;
+                    }
+                    //exit;
+                    
                 }
-                //exit;
             }
 
             //if ($page == 3) exit;
@@ -281,29 +273,7 @@ foreach ( $sites as $site => $site_data ) {
     }
 }
 
-/*---------------- Update created_date ---------------*/
-/*
-$items = $wpdb->get_results("SELECT * FROM wp_trend_products WHERE created_date = '0000-00-00' or created_date is NULL");
-
-foreach($items as $item) {
-    $sql = $wpdb->prepare("SELECT * FROM wp_trend_product_sales WHERE envato_id = %d ORDER BY record_date DESC LIMIT 1", array($item->envato_id) );
-    dump($sql);
-    $date = $wpdb->get_row( $sql );
-    
-    if (isset($date['sales'])) {
-        $sql = $wpdb->prepare("UPDATE wp_trend_products SET created_date = %s", array($date->record_date) );
-        dump($sql);
-        //$wpdb->query( $sql );
-        dd(0);
-        
-        
-    }
-}
-*/
 dd('Complete');
-
-
-
 
 
 function trends_get_pagination_page( $fname, $url ) {
